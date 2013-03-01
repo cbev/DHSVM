@@ -13,7 +13,7 @@
  *               DumpPix()
  *               DumpPixSed()
  * COMMENTS:
- * $Id: ExecDump.c,v 1.18 2006/10/12 23:51:02 nathalie Exp $     
+ * $Id: ExecDump.c, v 4.0  2013/1/5   Ning Exp $       
  */
 
 #include <stdio.h>

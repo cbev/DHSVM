@@ -406,7 +406,7 @@ void InitShadeMap(OPTIONSTRUCT * Options, int NDaySteps, int NY, int NX,
   if (!(Array = (float *) calloc(NY * NX, sizeof(float))))
     ReportError((char *) Routine, 1);
   Read2DMatrix(Options->SkyViewDataPath, Array, NumberType, NY, NX, 0, 
-	       VarName);
+	       VarName, 0);
   for (y = 0; y < NY; y++) {
     for (x = 0; x < NX; x++) {
       (*SkyViewMap)[y][x] = Array[y * NX + x];

@@ -12,8 +12,32 @@
  *               Read2DMatrixNetCDF()
  *               Write2DMatrixNetCDF()
  *               SizeOfNumberType()
- * COMMENTS:
- * $Id: FileIONetCDF.c,v 1.4 2003/07/01 21:26:14 olivier Exp $     
+ *
+ * Modified was made to Read2DMatrix by Ning (2013)
+
+   Comment     :First, make sure that the input NETCDF file to Read2DMatrix
+                is in 3 dimensions. In this case, the 1st dimention should be time, 
+				the 2nd is y (lat), and 3rd is x (lon). 
+				Using the command 'ncdump -in.nc', we can see that the 
+				descending/ascending order in which the NetCDF file uses to stores 
+				coordinates. The order is important b/c it decides in which order    
+				the NetCDF files is read out and stored in a 2D matrix.
+				Simply put, in the input netcdf file, if the first variable value 
+				corresponds to the smallest x and y, which is the lower left corner 
+				in the spatial sense, then it shouldn't be assigned to 
+				Matrix[0][0] which is in the upper left corner. Instead it should be 
+				stored in lower left corner.
+				So the Read2DMatrix function is changed so that it reads x and y 
+				in .nc input file, and output a flag that will be used as an indicator
+				of whethe or not the matrix should be reversed.
+				Note that this program now handles two cases: 1) .nc generated 
+				from gdal tool, in which x and y are both in an ascending order; 
+				2) .nc generated from arcmap, in which x is in an ascending and y in an 
+				descedning order, and no reverse needs to be made in this case. Just be
+				aware that a time dimention has to be added to arc generated .nc file.
+				(check the tutorial for instructions). 
+				The matrix will be reversed in the 1st case in the program that calls
+				Read2DMATRIX (Ning, Feb 2013)  
  */
 
 #ifdef HAVE_NETCDF
@@ -32,6 +56,7 @@
 #include "functions.h"
 #include "settings.h"
 #include "DHSVMerror.h"
+#include "sizeofnt.h"
 
 static void nc_check_err(const int ncstatus, const int line, const char *file);
 static int GenerateHistory(int argc, char **argv, char *History);
@@ -61,7 +86,7 @@ extern char commandline[];
   Comments     : NetCDF defines all the dimensions in the file before the file 
                  can be written to.  By default it creates the entire file
 		 during when nc_endef() is called and fills all positions with
-		 _FillValue.  This behavior is turned of here to speed up the
+		 _FillValue.  This behavior is turned off here to speed up the
 		 initialization process by or'ing  the  NC_NOFILL  flag  into
 		 the  mode parameter of nc_create() 
 *******************************************************************************/
@@ -217,11 +242,12 @@ void CreateMapFileNetCDF(char *FileName, ...)
   Comments     : NOTE that we cannot modify anything other than the returned
                  Matrix, because we have to stay compatible with Read2DMatrixBin 
 *******************************************************************************/
-int Read2DMatrixNetCDF(char *FileName, void *Matrix, int NumberType, int NY,
-		       int NX, int NDataSet, ...)
+ int Read2DMatrixNetCDF(char *FileName, void *Matrix, int NumberType, int NY,
+		       int NX, int NDataSet, ...) 
 {
   const char *Routine = "Read2DMatrixNetCDF";
   char Str[BUFSIZE + 1];
+  char dimname[NC_MAX_NAME + 1];
   char *VarName;
   int dimids[3];
   int ndims;
@@ -229,11 +255,18 @@ int Read2DMatrixNetCDF(char *FileName, void *Matrix, int NumberType, int NY,
   int ncstatus;
   nc_type TempNumberType;
   int varid;
+  size_t index;	
+  double time;
+  int timid;
   size_t count[3];
   size_t start[3] = { 0, 0, 0 };
   size_t dimlen;
+  size_t timelen;
   va_list ap;
-
+  double *Ycoord;
+  double *Xcoord;  /* lat, lon variables */
+  int	LatisAsc, LonisAsc, flag;    /* flag */
+  int lon_varid, lat_varid;
   count[0] = 1;
   count[1] = NY;
   count[2] = NX;
@@ -243,7 +276,7 @@ int Read2DMatrixNetCDF(char *FileName, void *Matrix, int NumberType, int NY,
   /****************************************************************************/
   va_start(ap, NDataSet);
   VarName = va_arg(ap, char *);
-
+  index = va_arg(ap, int);
   /****************************************************************************/
   /*                           QUERY NETDCF FILE                              */
   /****************************************************************************/
@@ -254,8 +287,8 @@ int Read2DMatrixNetCDF(char *FileName, void *Matrix, int NumberType, int NY,
   /* check whether the variable exists and get its parameters */
   ncstatus = nc_inq_varid(ncid, VarName, &varid);
   nc_check_err(ncstatus, __LINE__, __FILE__);
-  ncstatus = nc_inq_var(ncid, varid, NULL, &TempNumberType, &ndims, dimids,
-			NULL);
+
+  ncstatus = nc_inq_var(ncid, varid, 0, &TempNumberType, &ndims, dimids, NULL);
   nc_check_err(ncstatus, __LINE__, __FILE__);
   if (TempNumberType != NumberType) {
     sprintf(Str, "%s: nc_type for %s is different than expected.\n",
@@ -264,31 +297,83 @@ int Read2DMatrixNetCDF(char *FileName, void *Matrix, int NumberType, int NY,
   }
 
   /* make sure that the x and y dimensions have the correct sizes */
-  ncstatus = nc_inq_dimlen(ncid, dimids[1], &dimlen);
+  ncstatus = nc_inq_dim(ncid, dimids[1], dimname, &dimlen);  
+  nc_check_err(ncstatus, __LINE__, __FILE__);
+  ncstatus = nc_inq_varid(ncid, dimname, &lat_varid);
   nc_check_err(ncstatus, __LINE__, __FILE__);
   if (dimlen != NY)
-    ReportError(VarName, 59);
-  ncstatus = nc_inq_dimlen(ncid, dimids[2], &dimlen);
+	  ReportError(VarName, 59);
+  Ycoord = (double *) calloc(dimlen, sizeof(double));
+  if (Ycoord == NULL)
+    ReportError((char *) Routine, 1);
+    /* Read the latitude coordinate variable data. */
+  ncstatus = nc_get_var_double(ncid, lat_varid, Ycoord);
+  nc_check_err(ncstatus, __LINE__, __FILE__);
+  /* A quick check if the lat, long are in a ascending order. 
+  If so, matrix must be flipped so the first value in the matrix will be 
+  assigned to the lower left corner cell that has lowest X (lon) & Y (lat) value. 
+  (see more comments in the header of this C file). */
+  LatisAsc = 1;
+  if( Ycoord[0] > Ycoord[NY - 1] ) 
+	  LatisAsc = 0;
+
+  ncstatus = nc_inq_dim(ncid, dimids[2], dimname, &dimlen);
+  nc_check_err(ncstatus, __LINE__, __FILE__);
+  ncstatus = nc_inq_varid(ncid, dimname, &lon_varid);
   nc_check_err(ncstatus, __LINE__, __FILE__);
   if (dimlen != NX)
     ReportError(VarName, 60);
+  Xcoord = (double *) calloc(NX, sizeof(double));
+  if (Xcoord == NULL)
+    ReportError((char *) Routine, 1);
+  /* Read the latitude coordinate variable data. */
+  ncstatus = nc_get_var_double(ncid, lon_varid, Xcoord);
+  nc_check_err(ncstatus, __LINE__, __FILE__);
+  LonisAsc = 1;
+  if( Xcoord[0] > Xcoord[NX - 1] ) 
+	  LonisAsc = 0;
 
+  if (LonisAsc == 0){
+	  printf("The current program does not handle the cases when longitude or X \
+values in the .nc input in an descending order. You can either change the input \
+.nc file format outside of this program. or you can easily modify this program to \
+fit your needs. \n");
+	  ReportError("Improper NetCDF input files", 58);
+  }
+  if ((LatisAsc == 0) & (LonisAsc == 1))
+	  flag = 0;
+  if ((LatisAsc == 1) & (LonisAsc == 1))
+	  flag = 1;
+  
+  /* see whether the time dimension needs to be updated (the assumption is that
+     the same index value refers to the same moment in time.  Since currently we
+     make separate files for separate variables this is OK) */
+  ncstatus = nc_inq_dimlen(ncid, dimids[0], &timelen);
+  nc_check_err(ncstatus, __LINE__, __FILE__);
+  if (timelen < index + 1) {	/* need to add one to time */
+    ncstatus = nc_inq_varid(ncid, TIME_DIM, &timid);
+    nc_check_err(ncstatus, __LINE__, __FILE__);
+    time = (double) index;
+    ncstatus = nc_put_var1_double(ncid, timid, &index, &time);
+    nc_check_err(ncstatus, __LINE__, __FILE__);
+  }
+  start[0] = index;
   /****************************************************************************/
   /*                             READ VARIABLE                                */
   /****************************************************************************/
 
   switch (NumberType) {
   case NC_BYTE:
-    ncstatus = nc_get_vara_uchar(ncid, varid, start, count, Matrix);
+	  ncstatus = nc_get_vara_uchar(ncid, varid, start, count, Matrix);
     break;
   case NC_CHAR:
-    ncstatus = nc_get_vara_text(ncid, varid, start, count, Matrix);
+      ncstatus = nc_get_vara_text(ncid, varid, start, count, Matrix);
     break;
   case NC_SHORT:
-    ncstatus = nc_get_vara_short(ncid, varid, start, count, Matrix);
+	  ncstatus = nc_get_vara_short(ncid, varid, start, count, Matrix);
     break;
   case NC_INT:
-    ncstatus = nc_get_vara_int(ncid, varid, start, count, Matrix);
+	  ncstatus = nc_get_vara_int(ncid, varid, start, count, Matrix);
     break;
     /* 8 bit integer not yet implemented in NetCDF 3.4, but anticipated in
        future versions */
@@ -296,7 +381,7 @@ int Read2DMatrixNetCDF(char *FileName, void *Matrix, int NumberType, int NY,
     /*     ncstatus = nc_put_vara_long(ncid, varid, start, count, Matrix); */
     /*     break; */
   case NC_FLOAT:
-    ncstatus = nc_get_vara_float(ncid, varid, start, count, Matrix);
+	  ncstatus = nc_get_vara_float(ncid, varid, start, count, Matrix);
     break;
   case NC_DOUBLE:
     ncstatus = nc_get_vara_double(ncid, varid, start, count, Matrix);
@@ -314,7 +399,7 @@ int Read2DMatrixNetCDF(char *FileName, void *Matrix, int NumberType, int NY,
   ncstatus = nc_close(ncid);
   nc_check_err(ncstatus, __LINE__, __FILE__);
 
-  return NY * NX;
+  return flag;
 }
 
 /*******************************************************************************
