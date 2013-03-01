@@ -111,7 +111,7 @@ struct {
       "W/m2", "Incoming solar radiation", NC_FLOAT, FALSE, FALSE, FALSE, 0}, {
   304, "Shade.Factor",
       "Shade Factor", "%d",
-      "", "Shade Factor", NC_CHAR, FALSE, FALSE, FALSE, 0}, {
+      "", "Shade Factor", NC_BYTE, FALSE, FALSE, FALSE, 0}, {
   305, "SkyView.Factor",
       "SkyView Factor", "%.4g",
       "-", "Skyview Factor", NC_FLOAT, FALSE, FALSE, FALSE, 0}, {

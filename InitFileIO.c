@@ -12,7 +12,7 @@
  * FUNCTIONS:    InitFileIO()
  * COMMENTS:     In order to use the NetCDF, you have to define HAVE_NETCDF 
  *               during the build
- * $Id: InitFileIO.c,v 1.5 2006/10/03 22:50:22 nathalie Exp $
+ * $Id: InitFileIO.c,v 3.1 2013/02/06 19:12 ning Exp $
  */
 
 #include <stdio.h>
@@ -85,7 +85,7 @@ void InitFileIO(int FileFormat)
 
   printf("Initializing file IO\n");
 
-  /* Binary format */
+  /************************* Binary format **********************/
   if (FileFormat == BIN) {
     strcpy(fileext, ".bin");
     CreateMapFile = CreateMapFileBin;
@@ -98,7 +98,7 @@ void InitFileIO(int FileFormat)
     Read2DMatrix = Read2DMatrixByteSwapBin;
     Write2DMatrix = Write2DMatrixByteSwapBin;
   }
-  /* NetCDF File Format (version 3.4) */
+  /************* NetCDF File Format (version 3.4) ****************/
   else if (FileFormat == NETCDF) {
 #ifdef HAVE_NETCDF
     strcpy(fileext, ".nc");

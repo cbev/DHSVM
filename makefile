@@ -2,7 +2,7 @@
 # SUMMARY:      makefile for DHSVM
 # USAGE:        make DHSVM
 
-#	$Id: makefile,v 1.11 2006/10/12 20:38:12 nathalie Exp $	
+#	$Id: makefile,v 1.11 2013/02/03 Ning Exp $	
 
 OBJS = AdjustStorage.o Aggregate.o AggregateRadiation.o	CalcAerodynamic.o \
 CalcAvailableWater.o CalcBagnold.o CalcDistance.o CalcEffectiveKh.o \
@@ -43,18 +43,19 @@ GET= co
 REL=
 
  
-DEFS =  -DHAVE_X11
+DEFS =  -DHAVE_X11 -DHAVE_NETCDF
 #possible DEFS -DHAVE_NETCDF -DHAVE_X11 -DSHOW_MET_ONLY -DSNOW_ONLY
 CFLAGS =  -g -I/usr/X11R6/include -Wall  -I/usr/local/include/  $(DEFS) 
 
 CC = cc
 FLEX = /usr/bin/flex
-LIBS = -lm -L/usr/X11R6/lib -lX11 -L/sw/lib -L/usr/local/lib
+LIBS = -lm -L/usr/X11R6/lib -lX11 -L/sw/lib -L/usr/local/lib -lnetcdf
+
 # possible libs:   
 #LIBS = -lm -L/usr/X11R6/lib -lX11 -L/sw/lib -L/usr/local/lib -lnetcdf
 
 DHSVM: $(OBJS)
-	$(CC) $(OBJS) $(CFLAGS) -o DHSVM $(LIBS)
+	$(CC) $(OBJS) $(CFLAGS) -o DHSVM3.1.1 $(LIBS)
 
 clean::
 	rm -f DHSVM

@@ -10,7 +10,7 @@
  * DESCRIP-END.
  * FUNCTIONS:    
  * COMMENTS:
- * $Id: functions.h,v 1.30 2006/10/12 23:51:03 nathalie Exp $     
+ * $Id: functions.h, v 4.0  2013/1/10   Ning Exp $     
  */
 
 #ifndef FUNCTIONS_H
@@ -277,7 +277,7 @@ void InitUnitHydrograph(LISTPTR Input, MAPSIZE *Map, TOPOPIX **TopoMap,
 			UNITHYDR ***UnitHydrograph, float **Hydrograph,
 			UNITHYDRINFO *HydrographInfo);
 
-void InitVegMap(LISTPTR Input, MAPSIZE *Map, VEGPIX ***VegMap);
+void InitVegMap( OPTIONSTRUCT *Options, LISTPTR Input, MAPSIZE *Map, VEGPIX ***VegMap);
 
 int InitVegTable(VEGTABLE **VType, LISTPTR Input, OPTIONSTRUCT *Options,
 		 LAYER *Veg);

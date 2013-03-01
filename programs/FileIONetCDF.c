@@ -5,42 +5,37 @@
  * AUTHOR:       Bart Nijssen
  * ORG:          University of Washington, Department of Civil Engineering
  * E-MAIL:       nijssen@u.washington.edu
- * ORIG-DATE:    Apr-96
- * DESCRIPTION:  Functions for binary IO
+ * ORIG-DATE:    Apr-1996
+ * LAST-UPDATE:  Fen-2013
+ * DESCRIPTION:  Functions for netcdf IO
  * DESCRIP-END.
  * FUNCTIONS:    CreateMapFileNetCDF()
  *               Read2DMatrixNetCDF()
  *               Write2DMatrixNetCDF()
  *               SizeOfNumberType()
  *
- * Modified was made to Read2DMatrix by Ning (2013)
+ * Modification was made to Read2DMatrix by Ning (2013) 
 
-   Comment     :First, make sure that the input NETCDF file to Read2DMatrix
+ * Comment      :First, make sure that the input NETCDF file to Read2DMatrix
                 is in 3 dimensions. In this case, the 1st dimention should be time, 
-				the 2nd is y (lat), and 3rd is x (lon). 
-				Using the command 'ncdump -in.nc', we can see that the 
-				descending/ascending order in which the NetCDF file uses to stores 
-				coordinates. The order is important b/c it decides in which order    
-				the NetCDF files is read out and stored in a 2D matrix.
-				Simply put, in the input netcdf file, if the first variable value 
-				corresponds to the smallest x and y, which is the lower left corner 
-				in the spatial sense, then it shouldn't be assigned to 
-				Matrix[0][0] which is in the upper left corner. Instead it should be 
-				stored in lower left corner.
-				So the Read2DMatrix function is changed so that it reads x and y 
-				in .nc input file, and output a flag that will be used as an indicator
-				of whethe or not the matrix should be reversed.
-				Note that this program now handles two cases: 1) .nc generated 
-				from gdal tool, in which x and y are both in an ascending order; 
-				2) .nc generated from arcmap, in which x is in an ascending and y in an 
-				descedning order, and no reverse needs to be made in this case. Just be
-				aware that a time dimention has to be added to arc generated .nc file.
-				(check the tutorial for instructions). 
-				The matrix will be reversed in the 1st case in the program that calls
-				Read2DMATRIX (Ning, Feb 2013)  
+		  the 2nd is y (lat), and 3rd is x (lon). 
+		  Using the command 'ncdump -in.nc', we can see that the 
+		  (descending/ascending) order in which the NetCDF file uses to stores 
+		  coordinates. The order is important b/c it decides in which order    
+		  the NetCDF files is read out and stored in a 2D matrix.
+		  Simply put, in the input netcdf file, if the first variable value 
+		  is the smallest x and y, which is the lower left corner in the spatial 
+                sense, then it shouldn't be assigned to Matrix[0][0] which is spatially 
+                located at the upper left corner. Instead it should be stored in lower left 
+                corner. So the Read2DMatrix function is changed so that it reads x and y 
+		  in .nc input file, and output a flag that will be used as an indicator
+		  of whethe or not the matrix should be reversed. Note that this program now 
+                handles two cases: 1) .nc generated from gdal tool, in which x and y are both 
+                in an ascending order; 2) .nc generated from arcmap, in which x is in an 
+                ascending and y in an descedning order, and no reverse needs to be made in this 
+                case. Just be aware that a time dimention has to be added to arc generated 
+		  .nc file. Check the tutorial for instructions. (Ning, Feb 2013)  
  */
-
-#ifdef HAVE_NETCDF
 
 #include <stdarg.h>
 #include <stdio.h>
@@ -52,22 +47,39 @@
 #include "settings.h"
 #include "data.h"
 #include "fifoNetCDF.h"
-#include "fileio.h"
-#include "functions.h"
-#include "settings.h"
 #include "DHSVMerror.h"
 #include "sizeofnt.h"
+#include "fileio.h"
 
 static void nc_check_err(const int ncstatus, const int line, const char *file);
 static int GenerateHistory(int argc, char **argv, char *History);
 static int ncUpdateGlobalHistory(int argc, char **argv, int ncid);
-
-#ifdef TEST_FILEIONETCDF
 char commandline[] = "Testing the NetCDF file format";
-#else
-extern char commandline[];
-#endif
 
+/*****************************************************************************
+  Function name: MakeFileNameNetCDF()
+
+  Purpose      : Create a new file name ending in extension ".nc" to
+                 indicate that the file is binary
+
+  Required     : 
+    Path     - directory for files
+    Str1     - first part of filename
+    Str2     - second part of filename
+    FileName - filename
+
+  Returns      : void
+
+  Modifies     : FileName
+
+  Comments     : 
+*****************************************************************************/
+void MakeFileNameNetCDF(char *Path, char *Str1, char *Str2, char *FileName)
+{
+  const char *Routine = "MakeFileNameNetCDF";
+  
+  MakeFileNameGen(Path, Str1, Str2, ".nc", FileName);
+}
 /*******************************************************************************
   Function name: CreateMapFileNetCDF()
 
@@ -86,7 +98,7 @@ extern char commandline[];
   Comments     : NetCDF defines all the dimensions in the file before the file 
                  can be written to.  By default it creates the entire file
 		 during when nc_endef() is called and fills all positions with
-		 _FillValue.  This behavior is turned off here to speed up the
+		 _FillValue.  This behavior is turned of here to speed up the
 		 initialization process by or'ing  the  NC_NOFILL  flag  into
 		 the  mode parameter of nc_create() 
 *******************************************************************************/
@@ -242,8 +254,8 @@ void CreateMapFileNetCDF(char *FileName, ...)
   Comments     : NOTE that we cannot modify anything other than the returned
                  Matrix, because we have to stay compatible with Read2DMatrixBin 
 *******************************************************************************/
- int Read2DMatrixNetCDF(char *FileName, void *Matrix, int NumberType, int NY,
-		       int NX, int NDataSet, ...) 
+int Read2DMatrixNetCDF(char *FileName, void *Matrix, int NumberType, int NY,
+		       int NX, int NDataSet, ...)
 {
   const char *Routine = "Read2DMatrixNetCDF";
   char Str[BUFSIZE + 1];
@@ -255,14 +267,14 @@ void CreateMapFileNetCDF(char *FileName, ...)
   int ncstatus;
   nc_type TempNumberType;
   int varid;
-  size_t index;	
-  double time;
-  int timid;
   size_t count[3];
   size_t start[3] = { 0, 0, 0 };
   size_t dimlen;
-  size_t timelen;
   va_list ap;
+  size_t index;			/* index of the time slice being dumped */
+  int timid;
+  size_t timelen;
+  double time;
   double *Ycoord;
   double *Xcoord;  /* lat, lon variables */
   int	LatisAsc, LonisAsc, flag;    /* flag */
@@ -277,6 +289,7 @@ void CreateMapFileNetCDF(char *FileName, ...)
   va_start(ap, NDataSet);
   VarName = va_arg(ap, char *);
   index = va_arg(ap, int);
+
   /****************************************************************************/
   /*                           QUERY NETDCF FILE                              */
   /****************************************************************************/
@@ -288,7 +301,8 @@ void CreateMapFileNetCDF(char *FileName, ...)
   ncstatus = nc_inq_varid(ncid, VarName, &varid);
   nc_check_err(ncstatus, __LINE__, __FILE__);
 
-  ncstatus = nc_inq_var(ncid, varid, 0, &TempNumberType, &ndims, dimids, NULL);
+  ncstatus = nc_inq_var(ncid, varid, NULL, &TempNumberType, &ndims, dimids,
+			NULL);
   nc_check_err(ncstatus, __LINE__, __FILE__);
   if (TempNumberType != NumberType) {
     sprintf(Str, "%s: nc_type for %s is different than expected.\n",
@@ -298,7 +312,9 @@ void CreateMapFileNetCDF(char *FileName, ...)
 
   /* make sure that the x and y dimensions have the correct sizes */
   ncstatus = nc_inq_dim(ncid, dimids[1], dimname, &dimlen);  
+
   nc_check_err(ncstatus, __LINE__, __FILE__);
+
   ncstatus = nc_inq_varid(ncid, dimname, &lat_varid);
   nc_check_err(ncstatus, __LINE__, __FILE__);
   if (dimlen != NY)
@@ -318,7 +334,9 @@ void CreateMapFileNetCDF(char *FileName, ...)
 	  LatisAsc = 0;
 
   ncstatus = nc_inq_dim(ncid, dimids[2], dimname, &dimlen);
+
   nc_check_err(ncstatus, __LINE__, __FILE__);
+
   ncstatus = nc_inq_varid(ncid, dimname, &lon_varid);
   nc_check_err(ncstatus, __LINE__, __FILE__);
   if (dimlen != NX)
@@ -364,16 +382,16 @@ fit your needs. \n");
 
   switch (NumberType) {
   case NC_BYTE:
-	  ncstatus = nc_get_vara_uchar(ncid, varid, start, count, Matrix);
+    ncstatus = nc_get_vara_uchar(ncid, varid, start, count, Matrix);
     break;
   case NC_CHAR:
-      ncstatus = nc_get_vara_text(ncid, varid, start, count, Matrix);
+    ncstatus = nc_get_vara_text(ncid, varid, start, count, Matrix);
     break;
   case NC_SHORT:
-	  ncstatus = nc_get_vara_short(ncid, varid, start, count, Matrix);
+    ncstatus = nc_get_vara_short(ncid, varid, start, count, Matrix);
     break;
   case NC_INT:
-	  ncstatus = nc_get_vara_int(ncid, varid, start, count, Matrix);
+    ncstatus = nc_get_vara_int(ncid, varid, start, count, Matrix);
     break;
     /* 8 bit integer not yet implemented in NetCDF 3.4, but anticipated in
        future versions */
@@ -381,7 +399,7 @@ fit your needs. \n");
     /*     ncstatus = nc_put_vara_long(ncid, varid, start, count, Matrix); */
     /*     break; */
   case NC_FLOAT:
-	  ncstatus = nc_get_vara_float(ncid, varid, start, count, Matrix);
+    ncstatus = nc_get_vara_float(ncid, varid, start, count, Matrix);
     break;
   case NC_DOUBLE:
     ncstatus = nc_get_vara_double(ncid, varid, start, count, Matrix);
@@ -691,161 +709,3 @@ static int ncUpdateGlobalHistory(int argc, char **argv, int ncid)
 
   return status;
 }
-
-/*******************************************************************************
-  Test main. Compile by typing:
-gcc -Wall -g -o test_netcdf -DTEST_FILEIONETCDF FileIONetCDF.c ReportError.c Files.c SizeOfNT.c VarID.c -lnetcdf
-  then run the program by typing test_netcdf
-*******************************************************************************/
-
-#ifdef TEST_FILEIONETCDF
-
-int main(void)
-{
-  char FileLabel[BUFSIZE + 1];
-  char *cReadArray;
-  char *cWriteArray;
-  float *ReadArray;
-  float *WriteArray;
-  int eflag = 0;
-  int i;
-  MAPSIZE Map;
-  MAPDUMP cDMap;
-  MAPDUMP DMap;
-
-  /****************************************************************************/
-  /*                             INITIALIZATION                               */
-  /****************************************************************************/
-  /* Fill the Map structure */
-  strcpy(Map.System, "Coordinate system");
-  Map.Xorig = 100.;
-  Map.Yorig = 100.;
-  Map.X = 0;
-  Map.Y = 0;
-  Map.NX = 4;
-  Map.NY = 6;
-  Map.DX = 5.;
-  Map.DY = 5.;
-  Map.DXY = 7.07;
-  Map.OffsetX = 0;
-  Map.OffsetY = 0;
-
-  /* Write floats */
-  DMap.ID = 404;		/* Snow water equivalent */
-  DMap.Layer = 0;
-  DMap.Resolution = MAP_OUTPUT;	/* Full resolution maps */
-  DMap.N = 2;			/* Dump for two timesteps */
-  DMap.MinVal = 0;		/* Not used for resolution MAP_OUTPUT */
-  DMap.MaxVal = 2;		/* Not used for resolution MAP_OUTPUT */
-  strcpy(DMap.FileName, "test_netcdf_out.nc");
-  DMap.DumpDate = (DATE *) calloc(DMap.N, sizeof(DATE));
-  if (DMap.DumpDate == NULL)
-    ReportError("Testing NetCDF", 1);
-  DMap.DumpDate[0].Year = 1999;
-  DMap.DumpDate[0].Month = 12;
-  DMap.DumpDate[0].Day = 31;
-  DMap.DumpDate[0].JDay = 365;
-  DMap.DumpDate[0].Hour = 23;
-  DMap.DumpDate[1].Year = 2000;
-  DMap.DumpDate[1].Month = 1;
-  DMap.DumpDate[1].Day = 1;
-  DMap.DumpDate[1].JDay = 1;
-  DMap.DumpDate[1].Hour = 0;
-  MakeVarAttr(&DMap, FileLabel);
-
-  CreateMapFileNetCDF(DMap.FileName, FileLabel, &Map);
-  WriteArray = (float *) calloc(Map.NX * Map.NY, sizeof(float));
-  if (WriteArray == NULL)
-    ReportError("Testing NetCDF", 1);
-  for (i = 0; i < Map.NX * Map.NY; i++)
-    WriteArray[i] = (float) i;
-  Write2DMatrixNetCDF(DMap.FileName, (void *) WriteArray, DMap.NumberType,
-		      Map.NY, Map.NX, &DMap, 0);
-  for (i = 0; i < Map.NX * Map.NY; i++)
-    WriteArray[i] = (float) i + Map.NX * Map.NY;
-  Write2DMatrixNetCDF(DMap.FileName, (void *) WriteArray, DMap.NumberType,
-		      Map.NY, Map.NX, &DMap, 1);
-  for (i = 0; i < Map.NX * Map.NY; i++)
-    WriteArray[i] = (float) i + 2 * Map.NX * Map.NY;
-  Write2DMatrixNetCDF(DMap.FileName, (void *) WriteArray, DMap.NumberType,
-		      Map.NY, Map.NX, &DMap, 0);
-
-  /* Write bytes */
-  cDMap.ID = 401;		/* Snow water equivalent */
-  cDMap.Layer = 0;
-  cDMap.Resolution = MAP_OUTPUT;	/* Full resolution maps */
-  cDMap.N = 2;			/* Dump for two timesteps */
-  cDMap.MinVal = 0;		/* Not used for resolution MAP_OUTPUT */
-  cDMap.MaxVal = 2;		/* Not used for resolution MAP_OUTPUT */
-  strcpy(cDMap.FileName, "test_netcdf_out.nc");
-  cDMap.DumpDate = (DATE *) calloc(cDMap.N, sizeof(DATE));
-  if (cDMap.DumpDate == NULL)
-    ReportError("Testing NetCDF", 1);
-  cDMap.DumpDate[0].Year = 1999;
-  cDMap.DumpDate[0].Month = 12;
-  cDMap.DumpDate[0].Day = 31;
-  cDMap.DumpDate[0].JDay = 365;
-  cDMap.DumpDate[0].Hour = 23;
-  cDMap.DumpDate[1].Year = 2000;
-  cDMap.DumpDate[1].Month = 1;
-  cDMap.DumpDate[1].Day = 1;
-  cDMap.DumpDate[1].JDay = 1;
-  cDMap.DumpDate[1].Hour = 0;
-  MakeVarAttr(&cDMap, FileLabel);
-  cWriteArray = (char *) calloc(Map.NX * Map.NY, sizeof(char));
-  if (cWriteArray == NULL)
-    ReportError("Testing NetCDF", 1);
-  for (i = 0; i < Map.NX * Map.NY; i++)
-    cWriteArray[i] = (char) i;
-
-  Write2DMatrixNetCDF(cDMap.FileName, (void *) cWriteArray, cDMap.NumberType,
-		      Map.NY, Map.NX, &cDMap, 0);
-
-  /* Try reading the datasets just written and make sure they make sense */
-
-  ReadArray = (float *) calloc(Map.NX * Map.NY, sizeof(float));
-  if (ReadArray == NULL)
-    ReportError("Testing NetCDF", 1);
-
-  cReadArray = (char *) calloc(Map.NX * Map.NY, sizeof(char));
-  if (cReadArray == NULL)
-    ReportError("Testing NetCDF", 1);
-
-  printf("Reading %s from %s ...\n", DMap.Name, DMap.FileName);
-  Read2DMatrixNetCDF(DMap.FileName, (void *) ReadArray, DMap.NumberType,
-		     Map.NY, Map.NX, 0, DMap.Name);
-  printf("... read succesfull\n\n");
-  for (i = 0; i < Map.NX * Map.NY; i++) {
-    if (WriteArray[i] - ReadArray[i] != 0)
-      break;
-  }
-  if (i != Map.NX * Map.NY) {
-    eflag++;
-    fprintf(stderr, "Comparison failed for element %d\n", i);
-    fprintf(stderr, "Written value %f  :  Read value %f\n",
-	    WriteArray[i], ReadArray[i]);
-  }
-
-  printf("Reading %s from %s ...\n", cDMap.Name, cDMap.FileName);
-  Read2DMatrixNetCDF(cDMap.FileName, (void *) cReadArray, cDMap.NumberType,
-		     Map.NY, Map.NX, 0, cDMap.Name);
-  printf("... read succesfull\n\n");
-  for (i = 0; i < Map.NX * Map.NY; i++) {
-    if (cWriteArray[i] - cReadArray[i] != 0)
-      break;
-  }
-  if (i != Map.NX * Map.NY) {
-    eflag++;
-    fprintf(stderr, "Comparison failed for element %d\n", i);
-    fprintf(stderr, "Written value %d  :  Read value %d\n",
-	    cWriteArray[i], cReadArray[i]);
-  }
-
-  if (eflag == 0)
-    printf("Test successful\n");
-
-  return EXIT_SUCCESS;
-}
-
-#endif
-#endif

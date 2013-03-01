@@ -18,13 +18,13 @@
 
 void CreateMapFileBin(char *FileName, ...);
 int Read2DMatrixBin(char *FileName, void *Matrix, int NumberType, int NY,
-		    int NX, int NDataSet, ...);
+		    int NX, int NDataSet, ...); 
 int Read2DMatrixByteSwapBin(char *FileName, void *Matrix, int NumberType,
 			    int NY, int NX, int NDataSet, ...);
 int Write2DMatrixBin(char *FileName, void *Matrix, int NumberType, int NY,
-		     int NX, ...);
+		     int NX, ...); 
 int Write2DMatrixByteSwapBin(char *FileName, void *Matrix, int NumberType,
-			     int NY, int NX, ...);
+			     int NY, int NX, ...); 
 void byte_swap_long(long *buffer, int number_of_swaps);
 void byte_swap_short(short *buffer, int number_of_swaps);
 

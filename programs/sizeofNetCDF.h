@@ -10,13 +10,14 @@
  * DESCRIP-END.
  * FUNCTIONS:    
  * COMMENTS:
- * $Id: sizeofnt.h,v 1.4 2003/07/01 21:26:32 olivier Exp $     
+ * $Id: sizeofnt.h,v 3.1.1 2012/02/04 Ning Exp $     
  */
 
-#ifndef SIZEOFNT_H
-#define SIZEOFNT_H
+#ifndef SIZEOFNETCDF_H
+#define SIZEOFNETCDF_H
 
-/* type info codes (taken from netcdf.h, although they are enumerated in that case) */
+/* type info codes (taken from netcdf.h, although they are enumerated in that
+   case) */
 #ifndef HAVE_NETCDF
 #define NC_BYTE 1		/* signed 1 byte integer */
 #define NC_CHAR	2		/* ISO/ASCII character */

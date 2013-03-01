@@ -11,7 +11,7 @@
  * FUNCTIONS:    ReportError()
  *               ReportWarning()
  * COMMENTS:
- * $Id: ReportError.c,v 1.6 2004/08/24 23:21:48 tbohn Exp $     
+ * $Id: ReportError.c,v 3.1.1 2013/02/11 ning Exp $     
  */
 
 #include <stdio.h>

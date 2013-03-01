@@ -13,7 +13,7 @@
  *               InitNewDay()
  *               InitNewStep()
  * COMMENTS:
- * $Id: InitNewMonth.c,v 1.8 2006/10/03 22:50:22 nathalie Exp $     
+ * $Id: InitNewMonth.c,v 3.1 2013/02/06 ning Exp $     
  */
 
 #include <stdio.h>
@@ -97,7 +97,7 @@ void InitNewMonth(TIMESTRUCT *Time, OPTIONSTRUCT *Options, MAPSIZE *Map,
     for (i = 0; i < Time->NDaySteps; i++) {
 
       Read2DMatrix(FileName, Array1, NumberType, Map->NY, Map->NX, i, 
-		   VarName);
+		   VarName, i);
 
       for (y = 0; y < Map->NY; y++) {
 	for (x = 0; x < Map->NX; x++) {
