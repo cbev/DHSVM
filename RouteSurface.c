@@ -72,7 +72,7 @@ void RouteSurface(MAPSIZE * Map, TIMESTRUCT * Time, TOPOPIX ** TopoMap,
 								Beta is 3/5 */
   double outflow;              /* Outflow of water from a pixel during a sub-time step (m3/s)
 							   outflow is not entirely true for channel cells*/
- double sedoutflow;           /* Outflow used for sediment routing purposes (m3/s) */
+  double sedoutflow;           /* Outflow used for sediment routing purposes (m3/s) */
   float VariableDT;            /* Maximum stable time step (s) */  
   float **SedIn, SedOut;       /* (m3/m3) */  
   float DR;                    /* Potential erosion due to leaf drip */ 
@@ -89,25 +89,35 @@ void RouteSurface(MAPSIZE * Map, TIMESTRUCT * Time, TOPOPIX ** TopoMap,
   int sedbin;                  /* Particle bin that erosion is added to */
   /* Check to see if calculations for surface erosion should be done */
   if (Options->SurfaceErosion) {
-	  if ((SedIn = (float **) calloc(Map->NY, sizeof(float *))) == NULL) {
+	  if ((SedIn = (float **) calloc(Map->NY, sizeof(float *))) == NULL) 
 		  ReportError((char *) Routine, 1);
-	  }
-	  
 	  for (y = 0; y < Map->NY; y++) {
 		  if ((SedIn[y] = (float *) calloc(Map->NX, sizeof(float))) == NULL) {
-			  ReportError((char *) Routine, 1);}
+			  ReportError((char *) Routine, 1);
+			}
+	  }
+    /* Initialize variables */
+    for (y = 0; y < Map->NY; y++) {
+	    for (x = 0; x < Map->NX; x++) {
+		    SedIn[y][x] = 0.0;
+	    }
 	  }
   }
 
   /* Allocate memory for Runon Matrix */
   if (Options->HasNetwork)  {
-	  if ((Runon = (float **) calloc(Map->NY, sizeof(float *))) == NULL) {
+	  if ((Runon = (float **) calloc(Map->NY, sizeof(float *))) == NULL) 
 		  ReportError((char *) Routine, 1);
-    }
 	  for (y = 0; y < Map->NY; y++) {
 		  if ((Runon[y] = (float *) calloc(Map->NX, sizeof(float))) == NULL) {
 			  ReportError((char *) Routine, 1);
 		  }
+	  }
+	  /* Initialize Variables */
+	  for (y = 0; y < Map->NY; y++) {
+	    for (x = 0; x < Map->NX; x++) {
+		    Runon[y][x] = 0.0;
+	    }
 	  }
 	/* Option->Routing = false when routing = conventional */
 	if(!Options->Routing) {
@@ -281,15 +291,18 @@ else {/* Begin code for kinematic wave routing. */
 						  
 						  /* If there is an understory, it is assumed to cover the entire
 						  grid cell. DR is in kg/m^2*s) */
-						  if (VType->OverStory == TRUE) {
-							  if (VType->UnderStory == FALSE)
+						  if (VType[VegMap[y][x].Veg - 1].OverStory == TRUE) {
+							  if (VType[VegMap[y][x].Veg - 1].UnderStory == FALSE)
 								  DR = SedType[SoilMap[y][x].Soil-1].KIndex * Fw * PrecipMap[y][x].MomentSq; 
-							  if (VType->UnderStory == TRUE)
-								  DR = SedType[SoilMap[y][x].Soil-1].KIndex * Fw * (1-VType->Fract[1])*PrecipMap[y][x].MomentSq;
+							  if (VType[VegMap[y][x].Veg - 1].UnderStory == TRUE)
+								  DR = SedType[SoilMap[y][x].Soil-1].KIndex * Fw * 
+								        (1-VType[VegMap[y][x].Veg - 1].Fract[1])*PrecipMap[y][x].MomentSq;
 						  }
-						  else if (VType->UnderStory == TRUE)
-							  /* There is no Overstory, then (1-VType->Fract[0]) is the fraction of understory */	
-							  DR = SedType[SoilMap[y][x].Soil-1].KIndex * Fw * (1-VType->Fract[0])*PrecipMap[y][x].MomentSq; 
+						  else if (VType[VegMap[y][x].Veg - 1].UnderStory == TRUE)
+							  /* There is no Overstory, then (1-
+							  Fract[0]) is the fraction of understory */	
+						    DR = SType[SoilMap[y][x].Soil-1].KIndex * Fw *
+							      (1-VType[VegMap[y][x].Veg - 1].Fract[0])*PrecipMap[y][x].MomentSq; 
 						  /* no vegetation */
 						  else
 							  DR = 0.;
