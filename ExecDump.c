@@ -1584,9 +1584,9 @@ void DumpPix(DATE * Current, int first, FILES * OutFile, EVAPPIX * Evap,
   fprintf(OutFile->FilePtr, " %9.2E %9.2E %9.2E %9.2E %9.2E", Soil->TableDepth,
 	  Soil->SatFlow, Soil->Runoff, Soil->DetentionStorage, Soil->IExcess);
   
-  /*fprintf(OutFile->FilePtr, " %g %g %g %g %g %g %g, 
+  fprintf(OutFile->FilePtr, " %g %g %g %g %g %g %g", 
 	  Soil->TSurf, Soil->Qnet, Soil->Qs, Soil->Qe, Soil->Qg, Soil->Qst,
-	  Soil->Ra);*/
+	  Soil->Ra);
 
   if (Options->Infiltration == DYNAMIC)
     fprintf(OutFile->FilePtr, " %g", Soil->InfiltAcc);
