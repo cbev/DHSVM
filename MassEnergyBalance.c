@@ -212,7 +212,7 @@ void MassEnergyBalance(int y, int x, float SineSolarAltitude, float DX,
     RainfallIntensity = LocalPrecip->RainFall * (1./MMTOM) * (3600./Dt);
     
     /* Momentum is later weighted with the overstory/understory fraction */
-    if (RainfallIntensity > 10.)
+    if (RainfallIntensity < 10.)
       MS_Index = 0;
     else if (RainfallIntensity >= 10. && RainfallIntensity < 100.) 
       MS_Index = floor((RainfallIntensity + 49)/50);
