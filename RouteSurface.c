@@ -461,34 +461,33 @@ else {			/* No network, so use unit hydrograph method */
 					WaveLength = HydrographInfo->WaveLength[TravelTime - 1];
 					for (Step = 0; Step < WaveLength; Step++) {
 						Lag = UnitHydrograph[TravelTime - 1][Step].TimeStep;
-						Hydrograph[Lag] += SoilMap[y][x].Runoff * UnitHydrograph[TravelTime - 1][Step].Fraction;
+						Hydrograph[Lag] += SoilMap[y][x].IExcess * UnitHydrograph[TravelTime - 1][Step].Fraction;
 
 					}
-					SoilMap[y][x].Runoff = 0.0;
+					SoilMap[y][x].IExcess = 0.0;
 				}
 			}
-          }
-    }
+     }
+  }
     
-    StreamFlow = 0.0;
-    for (i = 0; i < Time->Dt; i++)
-      StreamFlow += (Hydrograph[i] * Map->DX * Map->DY) / Time->Dt;
+  StreamFlow = 0.0;
+  for (i = 0; i < Time->Dt; i++)
+     StreamFlow += (Hydrograph[i] * Map->DX * Map->DY) / Time->Dt;
     
-    /* Advance Hydrograph */
-    for (i = 0; i < Time->Dt; i++) {
+  /* Advance Hydrograph */
+  for (i = 0; i < Time->Dt; i++) {
       for (j = 0; j < HydrographInfo->TotalWaveLength - 1; j++) {
-	Hydrograph[j] = Hydrograph[j + 1];
+	       Hydrograph[j] = Hydrograph[j + 1];
       }
-
-    }
+  }
     
-    /* Set the last elements of the hydrograph to zero */
-    for (i = 0; i < Time->Dt; i++)
+  /* Set the last elements of the hydrograph to zero */
+  for (i = 0; i < Time->Dt; i++)
       Hydrograph[HydrographInfo->TotalWaveLength - (i + 1)] = 0.0;
     
-    PrintDate(&(Time->Current), Dump->Stream.FilePtr);
-    fprintf(Dump->Stream.FilePtr, " %g\n", StreamFlow);
-  }
+  PrintDate(&(Time->Current), Dump->Stream.FilePtr);
+  fprintf(Dump->Stream.FilePtr, " %g\n", StreamFlow);
+ }
 }
 
 /*****************************************************************************
