@@ -508,7 +508,6 @@ float FindDT(SOILPIX **SoilMap, MAPSIZE *Map, TIMESTRUCT *Time,
   float numinc;
   float maxRunoff;
   
-  maxRunoff = -99.;
   minDT = 36000.;
   
   for (y = 0; y < Map->NY; y++) {
@@ -522,13 +521,9 @@ float FindDT(SOILPIX **SoilMap, MAPSIZE *Map, TIMESTRUCT *Time,
 	  
 	  /* Calculate flow velocity from discharge  using manning's equation. */
 	  Ck = 1./(alpha*beta*pow((double)SoilMap[y][x].Runoff, beta -1.));
-	  
-	  if(SoilMap[y][x].Runoff > maxRunoff) {
-	    maxRunoff = SoilMap[y][x].Runoff;
-	  }
 
-	  
-	  if(Map->DX/Ck < minDT)
+	  /* flow distance / flow velocity = travel time accross the cell */
+	  if(Map->DY/Ck < minDT)
 	    minDT = Map->DX/Ck;
 	  }
       }
