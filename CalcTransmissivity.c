@@ -51,15 +51,22 @@
     material in Beven [1982].
 *****************************************************************************/
 float CalcTransmissivity(float SoilDepth, float WaterTable, float LateralKs,
-			 float KsExponent)
+			 float KsExponent, float DepthThresh)
 {
   float Transmissivity;		/* Transmissivity (m^2/s) */
+  float TransThresh;
 
   if (fequal(KsExponent, 0.0))
     Transmissivity = LateralKs * (SoilDepth - WaterTable);
-  else
-    Transmissivity = (LateralKs / KsExponent) *
-      (exp(-KsExponent * WaterTable) - exp(-KsExponent * SoilDepth));
+  else {
+    if (WaterTable < DepthThresh) {
+      Transmissivity = (LateralKs / KsExponent) * (exp(-KsExponent * WaterTable) - exp(-KsExponent * SoilDepth));
+    }
+    else  {
+      TransThresh = (LateralKs / KsExponent) * (exp(-KsExponent * DepthThresh) - exp(-KsExponent * SoilDepth));
+      Transmissivity = (SoilDepth-WaterTable)/(SoilDepth-DepthThresh)*TransThresh;
+    }
+  }
 
   return Transmissivity;
 }

@@ -413,6 +413,7 @@ typedef struct {
   float *Ch;				/* Heat capacity for soil medium */
   float MaxInfiltrationRate;/* Maximum infiltration rate for upper layer (m/s) */
   float G_Infilt;                /* Mean capillary drive for dynamic maximum infiltration rate (m)   */
+  float DepthThresh;		/* Threshold water table depth, beyond which transmissivity decays linearly with water table depth */
 } SOILTABLE;
 
 typedef struct {

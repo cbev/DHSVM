@@ -78,6 +78,7 @@ int InitSoilTable(SOILTABLE ** SType, LISTPTR Input, LAYER * Soil)
     "SOIL DESCRIPTION",
     "LATERAL CONDUCTIVITY",
     "EXPONENTIAL DECREASE",
+    "DEPTH THRESHOLD",
     "MAXIMUM INFILTRATION",
     "CAPILLARY DRIVE",
     "SURFACE ALBEDO",
@@ -136,6 +137,9 @@ int InitSoilTable(SOILTABLE ** SType, LISTPTR Input, LAYER * Soil)
 
     if (!CopyFloat(&((*SType)[i].KsLatExp), VarStr[exponent], 1))
       ReportError(KeyName[exponent], 51);
+
+    if (!CopyFloat(&((*SType)[i].DepthThresh), VarStr[depth_thresh], 1))
+      ReportError(KeyName[depth_thresh], 51);
 
     if (!CopyFloat(&((*SType)[i].MaxInfiltrationRate), VarStr[max_infiltration], 1))
       ReportError(KeyName[max_infiltration], 51);

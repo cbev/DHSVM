@@ -137,7 +137,7 @@ enum KEYS {
   MM5_longwave, MM5_precip, MM5_terrain, MM5_lapse,
   MM5_rows, MM5_cols, MM5_ext_north, MM5_ext_west, MM5_dy,
   /* Soil information */
-  soil_description = 0, lateral_ks, exponent, max_infiltration, capillary_drive,
+  soil_description = 0, lateral_ks, exponent, depth_thresh, max_infiltration, capillary_drive,
   soil_albedo, manning,
   number_of_layers, porosity, pore_size, bubbling_pressure, field_capacity,
   wilting_point, bulk_density, vertical_ks, solids_thermal, thermal_capacity,
