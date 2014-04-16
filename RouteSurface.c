@@ -301,7 +301,7 @@ else {/* Begin code for kinematic wave routing. */
 						  else if (VType[VegMap[y][x].Veg - 1].UnderStory == TRUE)
 							  /* There is no Overstory, then (1-
 							  Fract[0]) is the fraction of understory */	
-						    DR = SType[SoilMap[y][x].Soil-1].KIndex * Fw *
+						    DR = SedType[SoilMap[y][x].Soil-1].KIndex * Fw *
 							      (1-VType[VegMap[y][x].Veg - 1].Fract[0])*PrecipMap[y][x].MomentSq; 
 						  /* no vegetation */
 						  else
