@@ -52,6 +52,7 @@ void InitNewMonth(TIMESTRUCT *Time, OPTIONSTRUCT *Options, MAPSIZE *Map,
   int NumberType;
   float *Array = NULL;
   unsigned char *Array1 = NULL;
+  int flag;
 
   if (DEBUG)
     printf("Initializing new month\n");
@@ -61,25 +62,28 @@ void InitNewMonth(TIMESTRUCT *Time, OPTIONSTRUCT *Options, MAPSIZE *Map,
 
   if (Options->Prism == TRUE) {
     printf("reading in new PRISM field for month %d \n", Time->Current.Month);
-
     sprintf(FileName, "%s.%02d.%s", Options->PrismDataPath, 
 	    Time->Current.Month, Options->PrismDataExt);
-
     GetVarName(205, 0, VarName);
     GetVarNumberType(205, &NumberType);
     if (!(Array = (float *) calloc(Map->NY * Map->NX, sizeof(float))))
       ReportError((char *) Routine, 1);
-
-    Read2DMatrix(FileName, Array, NumberType, Map->NY, Map->NX, 0);
-
-    for (y = 0; y < Map->NY; y++) {
-      for (x = 0; x < Map->NX; x++) {
-	PrismMap[y][x] = Array[y * Map->NX + x];
-      }
-    }
-
-    free(Array);
-
+    flag = Read2DMatrix(FileName, Array, NumberType, Map->NY, Map->NX, 0, VarName, 0);
+	
+	if ((Options->FileFormat == NETCDF && flag == 0) 
+	  || (Options->FileFormat == BIN)) {
+      for (y = 0, i = 0; y < Map->NY; y++) 
+        for (x = 0; x < Map->NX; x++, i++) 
+          PrismMap[y][x] = Array[i];
+	}
+    else if (Options->FileFormat == NETCDF && flag == 1){
+	  for (y = Map->NY - 1, i = 0; y >= 0; y--) 
+		for (x = 0; x < Map->NX; x++, i++) 
+		  PrismMap[y][x] = Array[i];
+  }
+  else ReportError((char *) Routine, 57);
+  
+  free(Array);
   }
 
   if (Options->Shading == TRUE) {
@@ -88,21 +92,14 @@ void InitNewMonth(TIMESTRUCT *Time, OPTIONSTRUCT *Options, MAPSIZE *Map,
 	    Time->Current.Month, Options->ShadingDataExt);
     GetVarName(304, 0, VarName);
     GetVarNumberType(304, &NumberType);
-
-    if (!
-	(Array1 =
-	 (unsigned char *) calloc(Map->NY * Map->NX, sizeof(unsigned char))))
+    if (!(Array1 = (unsigned char *) calloc(Map->NY * Map->NX, sizeof(unsigned char))))
       ReportError((char *) Routine, 1);
-
     for (i = 0; i < Time->NDaySteps; i++) {
-
-      Read2DMatrix(FileName, Array1, NumberType, Map->NY, Map->NX, i, 
-		   VarName, i);
-
-      for (y = 0; y < Map->NY; y++) {
-	for (x = 0; x < Map->NX; x++) {
-	  ShadowMap[i][y][x] = Array1[y * Map->NX + x];
-	}
+      Read2DMatrix(FileName, Array1, NumberType, Map->NY, Map->NX, i, VarName, i);
+	  for (y = 0; y < Map->NY; y++) {
+		for (x = 0; x < Map->NX; x++) {
+		  ShadowMap[i][y][x] = Array1[y * Map->NX + x];
+		}
       }
     }
     free(Array1);

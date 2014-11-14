@@ -10,9 +10,18 @@
  *               the soil profile
  * DESCRIP-END.
  * FUNCTIONS:    CalcTransmissivity()
- * COMMENTS:
- * $Id: CalcTransmissivity.c,v 1.4 2003/07/01 21:26:11 olivier Exp $     
+ * COMMENTS: Modified by Ted Bohn on 10/1/2013
+             Implemented 2-part transmissivity v depth function. бн
+             Introduced a new parameter, DEPTH_THRESHOLD.  When water table depth 
+			 is shallower than this threshold, transmissivity decays exponentially 
+			 with depth as before.  When water table depth is deeper than this threshold, 
+			 transmissivity decays linearly until it reaches 0.  DEPTH_THRESHOLD must be 
+			 specified in the config file. 
+
+ * $Id: CalcTransmissivity.c,v 1.4 2003/07/01 21:26:11 olivier Exp $   
+ * $Id: CalcTransmissivity.c,v 3.1.1 2013/10/01 13:12 Ted Bohn Exp $   
  */
+
 
 #include <math.h>
 #include <stdio.h>
@@ -59,17 +68,18 @@ float CalcTransmissivity(float SoilDepth, float WaterTable, float LateralKs,
   if (fequal(KsExponent, 0.0))
     Transmissivity = LateralKs * (SoilDepth - WaterTable);
   else {
-    if (WaterTable < DepthThresh) {
-      Transmissivity = (LateralKs / KsExponent) * (exp(-KsExponent * WaterTable) - exp(-KsExponent * SoilDepth));
-    }
-    else  {
-      TransThresh = (LateralKs / KsExponent) * (exp(-KsExponent * DepthThresh) - exp(-KsExponent * SoilDepth));
-      if(SoilDepth < DepthThresh) {
-	printf("Warning: Soil DepthThreshold (%.2f) > the soil depth (%.2f)!\n", DepthThresh, SoilDepth);
-	printf("Transmissivity is set to zero!");
-      }
-      Transmissivity = (SoilDepth-WaterTable)/(SoilDepth-DepthThresh)*TransThresh;
-    }
+	/* a smaller value of WaterTable variables indicates a higher actual water table depth */
+	if (WaterTable < DepthThresh) {
+	  Transmissivity = (LateralKs / KsExponent) * (exp(-KsExponent * WaterTable) - exp(-KsExponent * SoilDepth));
+	}
+        else  {
+	  TransThresh = (LateralKs / KsExponent) * (exp(-KsExponent * DepthThresh) - exp(-KsExponent * SoilDepth));
+	  if(SoilDepth < DepthThresh) {
+		printf("Warning: Soil DepthThreshold (%.2f) > the soil depth (%.2f)!\n", DepthThresh, SoilDepth);
+		printf("Transmissivity is set to zero!");
+	  }
+	  Transmissivity = (SoilDepth-WaterTable)/(SoilDepth-DepthThresh)*TransThresh;
+	}
   }
 
   return Transmissivity;

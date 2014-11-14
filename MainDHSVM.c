@@ -464,7 +464,7 @@ int main(int argc, char **argv)
 	   SedMap, Network, &ChannelData, FineMap, &Soil, &Total, &HydrographInfo,
 	   Hydrograph);
 
-  FinalMassBalance(&(Dump.Balance), &Total, &Mass, &Options, roadarea);
+  FinalMassBalance(&(Dump.FinalBalance), &Total, &Mass, &Options, roadarea);
 
 /*****************************************************************************
   Cleanup

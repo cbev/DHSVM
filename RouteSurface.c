@@ -11,10 +11,10 @@
  * FUNCTIONS:    RouteSurface()
  * Modification: Changes are made to exclude the impervious channel cell (with 
                  a non-zero impervious fraction) from surface routing. In the original
-  			 code, some impervious channel cells are routed to themselves causing 
+				 code, some impervious channel cells are routed to themselves causing 
 				 overestimated runoff in those cells (Ning, 2013).
               
- * $Id: RouteSurface.c, v 3.1.1  2013/1/7   Ning Exp $  
+ * $Id: RouteSurface.c, v 3.1.1  2013/3/21   Ning Exp $  
  */
 #include <assert.h>
 #include <stdio.h>
@@ -89,91 +89,92 @@ void RouteSurface(MAPSIZE * Map, TIMESTRUCT * Time, TOPOPIX ** TopoMap,
   int sedbin;                  /* Particle bin that erosion is added to */
   /* Check to see if calculations for surface erosion should be done */
   if (Options->SurfaceErosion) {
-	  if ((SedIn = (float **) calloc(Map->NY, sizeof(float *))) == NULL) 
-		  ReportError((char *) Routine, 1);
-	  for (y = 0; y < Map->NY; y++) {
-		  if ((SedIn[y] = (float *) calloc(Map->NX, sizeof(float))) == NULL) {
-			  ReportError((char *) Routine, 1);
-			}
-	  }
-    /* Initialize variables */
-    for (y = 0; y < Map->NY; y++) {
-	    for (x = 0; x < Map->NX; x++) {
-		    SedIn[y][x] = 0.0;
-	    }
-	  }
+     if ((SedIn = (float **) calloc(Map->NY, sizeof(float *))) == NULL) 
+        ReportError((char *) Routine, 1);
+     for (y = 0; y < Map->NY; y++) {
+        if ((SedIn[y] = (float *) calloc(Map->NX, sizeof(float))) == NULL) {
+	    ReportError((char *) Routine, 1);
+        }
+     }
+     /* Initiazlied Variables */
+     for (y = 0; y < Map->NY; y++) {
+	for (x = 0; x < Map->NX; x++) {
+	   SedIn[y][x] = 0;
+	}
+     }
   }
 
   /* Allocate memory for Runon Matrix */
   if (Options->HasNetwork)  {
-	  if ((Runon = (float **) calloc(Map->NY, sizeof(float *))) == NULL) 
-		  ReportError((char *) Routine, 1);
-	  for (y = 0; y < Map->NY; y++) {
-		  if ((Runon[y] = (float *) calloc(Map->NX, sizeof(float))) == NULL) {
-			  ReportError((char *) Routine, 1);
-		  }
-	  }
-	  /* Initialize Variables */
-	  for (y = 0; y < Map->NY; y++) {
-	    for (x = 0; x < Map->NX; x++) {
-		    Runon[y][x] = 0.0;
+     if ((Runon = (float **) calloc(Map->NY, sizeof(float *))) == NULL) 
+	 ReportError((char *) Routine, 1);
+     for (y = 0; y < Map->NY; y++) {
+	 if ((Runon[y] = (float *) calloc(Map->NX, sizeof(float))) == NULL) {
+	    ReportError((char *) Routine, 1);
+	 }
+     }
+     /* Initialize Runon variables */
+     for (y = 0; y < Map->NY; y++) {
+	for (x = 0; x < Map->NX; x++) {
+	   Runon[y][x] = 0.;
+	}
+     }
+     /* Option->Routing = false when routing = conventional */
+     if(!Options->Routing) {
+	for (y = 0; y < Map->NY; y++) {
+	  for (x = 0; x < Map->NX; x++) {
+	    if (INBASIN(TopoMap[y][x].Mask)) {
+		SoilMap[y][x].Runoff = SoilMap[y][x].IExcess; 
+		SoilMap[y][x].IExcess = 0;
+		SoilMap[y][x].DetentionIn = 0;
 	    }
-	  }
-	/* Option->Routing = false when routing = conventional */
-	if(!Options->Routing) {
-		for (y = 0; y < Map->NY; y++) {
-			for (x = 0; x < Map->NX; x++) {
-				if (INBASIN(TopoMap[y][x].Mask)) {
-					SoilMap[y][x].Runoff = SoilMap[y][x].IExcess; 
-					SoilMap[y][x].IExcess = 0;
-					SoilMap[y][x].DetentionIn = 0;
-		        }
-			 }
-	   } 
-	   for (y = 0; y < Map->NY; y++) {
-		   for (x = 0; x < Map->NX; x++) {
-			   if (INBASIN(TopoMap[y][x].Mask)) {
-				   if (!channel_grid_has_channel(ChannelData->stream_map, x, y)) {
-					   if (VType[VegMap[y][x].Veg - 1].ImpervFrac > 0.0) {
-						   /* Calculate the outflow from impervious portion of urban cell straight to nearest channel cell */		
-					       SoilMap[TopoMap[y][x].drains_y][TopoMap[y][x].drains_x].IExcess += 
-							   (1 - VType[VegMap[y][x].Veg - 1].DetentionFrac) * 
-							   VType[VegMap[y][x].Veg - 1].ImpervFrac * SoilMap[y][x].Runoff;
-						   /* Retained water in detention storage */
-						   SoilMap[y][x].DetentionIn = VType[VegMap[y][x].Veg - 1].DetentionFrac * 
-							   VType[VegMap[y][x].Veg - 1].ImpervFrac * SoilMap[y][x].Runoff;		
-						   /* Retained water in Detention storage routed to channel */   
-					       SoilMap[y][x].DetentionStorage += SoilMap[y][x].DetentionIn;
-					       SoilMap[y][x].DetentionOut = SoilMap[y][x].DetentionStorage * VType[VegMap[y][x].Veg - 1].DetentionDecay;
-					       SoilMap[TopoMap[y][x].drains_y][TopoMap[y][x].drains_x].IExcess += SoilMap[y][x].DetentionOut;
-					       SoilMap[y][x].DetentionStorage -= SoilMap[y][x].DetentionOut;
-					       if (SoilMap[y][x].DetentionStorage < 0.0) 
-						       SoilMap[y][x].DetentionStorage = 0.0;
-					       /* Route the runoff from pervious portion of urban cell to the neighboring cell */       
-						   for (n = 0; n < NDIRS; n++) {
-								int xn = x + xdirection[n];
-								int yn = y + ydirection[n];
-								if (valid_cell(Map, xn, yn)) {
-									SoilMap[yn][xn].IExcess += (1 - VType[VegMap[y][x].Veg - 1].ImpervFrac) * SoilMap[y][x].Runoff 
-										*((float) TopoMap[y][x].Dir[n] /(float) TopoMap[y][x].TotalDir);
-								}
-						   }
-					   }
-			    else {
-					for (n = 0; n < NDIRS; n++) {
-						int xn = x + xdirection[n];
-						int yn = y + ydirection[n];
-					    if (valid_cell(Map, xn, yn)) {
-							SoilMap[yn][xn].IExcess += SoilMap[y][x].Runoff *((float)TopoMap[y][x].Dir[n]/(float)TopoMap[y][x].TotalDir);
-						}
-					}
-				  }
+         }
+	} 
+	for (y = 0; y < Map->NY; y++) {
+	  for (x = 0; x < Map->NX; x++) {
+	     if (INBASIN(TopoMap[y][x].Mask)) {
+		 if (!channel_grid_has_channel(ChannelData->stream_map, x, y)) {
+		    if (VType[VegMap[y][x].Veg - 1].ImpervFrac > 0.0) {
+			/* Calculate the outflow from impervious portion of urban cell straight to nearest channel cell */		
+			SoilMap[TopoMap[y][x].drains_y][TopoMap[y][x].drains_x].IExcess += 
+				(1 - VType[VegMap[y][x].Veg - 1].DetentionFrac) * 
+				VType[VegMap[y][x].Veg - 1].ImpervFrac * SoilMap[y][x].Runoff;
+			/* Retained water in detention storage */
+			SoilMap[y][x].DetentionIn = VType[VegMap[y][x].Veg - 1].DetentionFrac * 
+				VType[VegMap[y][x].Veg - 1].ImpervFrac * SoilMap[y][x].Runoff;		
+			/* Retained water in Detention storage routed to channel */   
+			SoilMap[y][x].DetentionStorage += SoilMap[y][x].DetentionIn;
+			SoilMap[y][x].DetentionOut = SoilMap[y][x].DetentionStorage * VType[VegMap[y][x].Veg - 1].DetentionDecay;
+			SoilMap[TopoMap[y][x].drains_y][TopoMap[y][x].drains_x].IExcess += SoilMap[y][x].DetentionOut;
+			SoilMap[y][x].DetentionStorage -= SoilMap[y][x].DetentionOut;
+			if (SoilMap[y][x].DetentionStorage < 0.0) 
+			   SoilMap[y][x].DetentionStorage = 0.0;
+			/* Route the runoff from pervious portion of urban cell to the neighboring cell */       
+			for (n = 0; n < NDIRS; n++) {
+			   int xn = x + xdirection[n];
+			   int yn = y + ydirection[n];
+			   if (valid_cell(Map, xn, yn)) {
+				SoilMap[yn][xn].IExcess += (1 - VType[VegMap[y][x].Veg - 1].ImpervFrac) * SoilMap[y][x].Runoff 
+					*((float) TopoMap[y][x].Dir[n] /(float) TopoMap[y][x].TotalDir);
 			   }
-			   else if (channel_grid_has_channel(ChannelData->stream_map, x, y)){
-				   SoilMap[y][x].IExcess += SoilMap[y][x].Runoff;}
-			 }
-		  }
-	   }
+			}
+		    }
+		    else {
+			for (n = 0; n < NDIRS; n++) {
+			   int xn = x + xdirection[n];
+			   int yn = y + ydirection[n];
+			   if (valid_cell(Map, xn, yn)) {
+				SoilMap[yn][xn].IExcess += SoilMap[y][x].Runoff *((float)TopoMap[y][x].Dir[n]/(float)TopoMap[y][x].TotalDir);
+			   }
+			}
+		    }
+		 }
+		 else if (channel_grid_has_channel(ChannelData->stream_map, x, y)){
+			SoilMap[y][x].IExcess += SoilMap[y][x].Runoff;
+               }
+	     }
+	  }
+      }
 }/* end if Options->routing = conventional */
 /***********************************************************************************************************************/ 
 else {/* Begin code for kinematic wave routing. */ 
@@ -289,20 +290,19 @@ else {/* Begin code for kinematic wave routing. */
 						  else
 							  Fw = exp(1 - (h/PrecipMap[y][x].Dm));
 						  
-						  /* If there is an understory, it is assumed to cover the entire
-						  grid cell. DR is in kg/m^2*s) */
+						  /* If there is an understory, it is assumed to cover the entire grid cell. DR is in kg/m^2*s) */
+                                            /* Modified by Ning (3/21/2013, 4:04 pm) */
 						  if (VType[VegMap[y][x].Veg - 1].OverStory == TRUE) {
 							  if (VType[VegMap[y][x].Veg - 1].UnderStory == FALSE)
 								  DR = SedType[SoilMap[y][x].Soil-1].KIndex * Fw * PrecipMap[y][x].MomentSq; 
 							  if (VType[VegMap[y][x].Veg - 1].UnderStory == TRUE)
 								  DR = SedType[SoilMap[y][x].Soil-1].KIndex * Fw * 
-								        (1-VType[VegMap[y][x].Veg - 1].Fract[1])*PrecipMap[y][x].MomentSq;
+                                                             (1 - VType[VegMap[y][x].Veg - 1].Fract[1])*PrecipMap[y][x].MomentSq;
 						  }
 						  else if (VType[VegMap[y][x].Veg - 1].UnderStory == TRUE)
-							  /* There is no Overstory, then (1-
-							  Fract[0]) is the fraction of understory */	
-						    DR = SedType[SoilMap[y][x].Soil-1].KIndex * Fw *
-							      (1-VType[VegMap[y][x].Veg - 1].Fract[0])*PrecipMap[y][x].MomentSq; 
+							  /* There is no Overstory, then (1-VType->Fract[0]) is the fraction of understory */	
+							  DR = SedType[SoilMap[y][x].Soil-1].KIndex * Fw * 
+                                                         (1-VType[VegMap[y][x].Veg - 1].Fract[0])*PrecipMap[y][x].MomentSq; 
 						  /* no vegetation */
 						  else
 							  DR = 0.;
@@ -461,33 +461,34 @@ else {			/* No network, so use unit hydrograph method */
 					WaveLength = HydrographInfo->WaveLength[TravelTime - 1];
 					for (Step = 0; Step < WaveLength; Step++) {
 						Lag = UnitHydrograph[TravelTime - 1][Step].TimeStep;
-						Hydrograph[Lag] += SoilMap[y][x].IExcess * UnitHydrograph[TravelTime - 1][Step].Fraction;
+						Hydrograph[Lag] += SoilMap[y][x].Runoff * UnitHydrograph[TravelTime - 1][Step].Fraction;
 
 					}
-					SoilMap[y][x].IExcess = 0.0;
+					SoilMap[y][x].Runoff = 0.0;
 				}
 			}
-     }
-  }
+          }
+    }
     
-  StreamFlow = 0.0;
-  for (i = 0; i < Time->Dt; i++)
-     StreamFlow += (Hydrograph[i] * Map->DX * Map->DY) / Time->Dt;
+    StreamFlow = 0.0;
+    for (i = 0; i < Time->Dt; i++)
+      StreamFlow += (Hydrograph[i] * Map->DX * Map->DY) / Time->Dt;
     
-  /* Advance Hydrograph */
-  for (i = 0; i < Time->Dt; i++) {
+    /* Advance Hydrograph */
+    for (i = 0; i < Time->Dt; i++) {
       for (j = 0; j < HydrographInfo->TotalWaveLength - 1; j++) {
-	       Hydrograph[j] = Hydrograph[j + 1];
+	Hydrograph[j] = Hydrograph[j + 1];
       }
-  }
+
+    }
     
-  /* Set the last elements of the hydrograph to zero */
-  for (i = 0; i < Time->Dt; i++)
+    /* Set the last elements of the hydrograph to zero */
+    for (i = 0; i < Time->Dt; i++)
       Hydrograph[HydrographInfo->TotalWaveLength - (i + 1)] = 0.0;
     
-  PrintDate(&(Time->Current), Dump->Stream.FilePtr);
-  fprintf(Dump->Stream.FilePtr, " %g\n", StreamFlow);
- }
+    PrintDate(&(Time->Current), Dump->Stream.FilePtr);
+    fprintf(Dump->Stream.FilePtr, " %g\n", StreamFlow);
+  }
 }
 
 /*****************************************************************************
@@ -508,6 +509,7 @@ float FindDT(SOILPIX **SoilMap, MAPSIZE *Map, TIMESTRUCT *Time,
   float numinc;
   float maxRunoff;
   
+  maxRunoff = -99.;
   minDT = 36000.;
   
   for (y = 0; y < Map->NY; y++) {
@@ -521,9 +523,13 @@ float FindDT(SOILPIX **SoilMap, MAPSIZE *Map, TIMESTRUCT *Time,
 	  
 	  /* Calculate flow velocity from discharge  using manning's equation. */
 	  Ck = 1./(alpha*beta*pow((double)SoilMap[y][x].Runoff, beta -1.));
+	  
+	  if(SoilMap[y][x].Runoff > maxRunoff) {
+	    maxRunoff = SoilMap[y][x].Runoff;
+	  }
 
-	  /* flow distance / flow velocity = travel time accross the cell */
-	  if(Map->DY/Ck < minDT)
+	  
+	  if(Map->DX/Ck < minDT)
 	    minDT = Map->DX/Ck;
 	  }
       }

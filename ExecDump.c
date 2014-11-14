@@ -1506,8 +1506,8 @@ void DumpPix(DATE * Current, int first, FILES * OutFile, EVAPPIX * Evap,
 	  
 	  // Main Aggregate Values File
 	  fprintf(OutFile->FilePtr, "         Date        ");
-	  fprintf(OutFile->FilePtr, "HasSnow LastSnow    Swq       Melt   ");
-	  fprintf(OutFile->FilePtr, "SurfWater TSurf ColdContent ");
+	  fprintf(OutFile->FilePtr, "HasSnow SnowCover LastSnow    Swq       Melt   ");
+	  fprintf(OutFile->FilePtr, "PackWater TPack ");
 	  fprintf(OutFile->FilePtr, " TotEvap  "); /*total evapotranspiration*/
 	  for (i = 0; i < NVeg + 1; i++)
 		  fprintf(OutFile->FilePtr, "EPot%d ", i);
@@ -1554,8 +1554,8 @@ void DumpPix(DATE * Current, int first, FILES * OutFile, EVAPPIX * Evap,
 	  Snow->HasSnow, Snow->SnowCoverOver, Snow->LastSnow, Snow->Swq,
 	  Snow->Melt, Snow->PackWater, Snow->TPack);
     
-  fprintf(OutFile->FilePtr, " %7d %5d   %9.3E %9.3E",
-		Snow->HasSnow, Snow->LastSnow, Snow->Swq, Snow->Melt);
+  /* fprintf(OutFile->FilePtr, " %7d %5d   %9.3E %9.3E",
+		Snow->HasSnow, Snow->LastSnow, Snow->Swq, Snow->Melt); */
   fprintf(OutFile->FilePtr, " %9.3E", Evap->ETot);
   for (i = 0; i < NVeg + 1; i++)
     fprintf(OutFile->FilePtr, " %g", Evap->EPot[i]);           /* Potential transpiration */

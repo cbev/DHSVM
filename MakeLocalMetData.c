@@ -205,7 +205,10 @@ PIXMET MakeLocalMetData(int y, int x, MAPSIZE * Map, int DayStep,
   /* a finer resolution than this would require a higher min angle or more memory */
 
   if (Options->Shading == TRUE) {
-    LocalMet.SinBeam = LocalMet.Sin * (float) shadow / 22.23191;
+    /* commented by Ning. the program script used to generate the shadow files
+    are update to produce shadow factors ranging from 0 to 255 consistent with 
+    arcinfo */
+    LocalMet.SinBeam *= (float) shadow / 22.23191;
     LocalMet.SinDiffuse *= skyview;
     if (LocalMet.SinBeam + LocalMet.SinDiffuse > SOLARCON)
       LocalMet.SinBeam = SOLARCON - LocalMet.SinDiffuse;

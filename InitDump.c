@@ -151,6 +151,9 @@ void InitDump(LISTPTR Input, OPTIONSTRUCT * Options, MAPSIZE * Map,
   // Open file for recording mass balance for entire basin
   sprintf(Dump->Balance.FileName, "%sMass.Balance", Dump->Path);
   OpenFile(&(Dump->Balance.FilePtr), Dump->Balance.FileName, "w", TRUE);
+  
+  sprintf(Dump->FinalBalance.FileName, "%sMass.Final.Balance", Dump->Path);
+  OpenFile(&(Dump->FinalBalance.FilePtr), Dump->FinalBalance.FileName, "w", TRUE);
 
   if (Options->Extent != POINT) {
 

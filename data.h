@@ -60,6 +60,7 @@ typedef struct {
   FILES Aggregate;					/* File with aggregated values for entire basin */
   FILES AggregateSediment;			/* File with aggregated sediment values for entire basin */
   FILES Balance;					/* File with summed mass balance values for entire basin */
+  FILES FinalBalance;               /* File with summed mass balance values for the entire simulation period for entire basin */
   FILES SedBalance;					/* File with summed mass balance values for entire basin */
   FILES Stream;
   int NStates;						/* Number of model state dumps */
@@ -413,7 +414,7 @@ typedef struct {
   float *Ch;				/* Heat capacity for soil medium */
   float MaxInfiltrationRate;/* Maximum infiltration rate for upper layer (m/s) */
   float G_Infilt;                /* Mean capillary drive for dynamic maximum infiltration rate (m)   */
-  float DepthThresh;		/* Threshold water table depth, beyond which transmissivity decays linearly with water table depth */
+  float DepthThresh;    /* Threshold water table depth, beyond which transmissivity decays linearly with water table depth */
 } SOILTABLE;
 
 typedef struct {
