@@ -41,7 +41,7 @@ int (*Read2DMatrix) (char *FileName, void *Matrix, int NumberType, int NY, int N
 int (*Write2DMatrix) (char *FileName, void *Matrix, int NumberType, int NY, int NX, ...);
 
 /* global strings */
-char *version = "Version 3.0 Mon August 9, 2004"; /* store version string */
+char *version = "Version 3.1.1 ";               /* store version string */
 char commandline[BUFSIZE + 1] = "";		/* store command line */
 char fileext[BUFSIZ + 1] = "";			/* file extension */
 char errorstr[BUFSIZ + 1] = "";			/* error message */
